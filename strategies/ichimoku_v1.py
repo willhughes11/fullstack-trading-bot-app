@@ -133,15 +133,18 @@ class IchimokuCloud:
 
     def kijun_sen_direction(self, df: DataFrame, window: int = 26):
         last_kijun_sen_index = df["kijun_sen"].last_valid_index()
-        kijun_sen = df.iloc[
-            max(0, last_kijun_sen_index - window) : last_kijun_sen_index + 1
-        ]["kijun_sen"]
-        data = np.array(kijun_sen.tolist())
-        slope_linreg = np.polyfit(range(len(data)), data, 1)[0]
-        if slope_linreg > 0:
-            return 1
-        elif slope_linreg < 0:
-            return -1
+        if last_kijun_sen_index != None:
+            kijun_sen = df.iloc[
+                max(0, last_kijun_sen_index - window) : last_kijun_sen_index + 1
+            ]["kijun_sen"]
+            data = np.array(kijun_sen.tolist())
+            slope_linreg = np.polyfit(range(len(data)), data, 1)[0]
+            if slope_linreg > 0:
+                return 1
+            elif slope_linreg < 0:
+                return -1
+            else:
+                return 0
         else:
             return 0
 
@@ -155,25 +158,31 @@ class IchimokuCloud:
 
     def price_kijun_sen_cross(self, df: DataFrame):
         last_price_index = df["Close"].last_valid_index()
-        close = df.iloc[last_price_index]["Close"]
-        kijun_sen = df.iloc[last_price_index]["kijun_sen"]
-
-        if close > kijun_sen:
-            return 1, 5
-        elif close < kijun_sen:
-            return -1, 5
+        if last_price_index != None: 
+            close = df.iloc[last_price_index]["Close"]
+            kijun_sen = df.iloc[last_price_index]["kijun_sen"]
+    
+            if close > kijun_sen:
+                return 1, 5
+            elif close < kijun_sen:
+                return -1, 5
+            else:
+                return 0, 0
         else:
             return 0, 0
 
     def tenkan_sen_kijun_sen_cross(self, df: DataFrame):
         last_price_index = df["Close"].last_valid_index()
-        tenkan_sen = df.iloc[last_price_index]["tenkan_sen"]
-        kijun_sen = df.iloc[last_price_index]["kijun_sen"]
+        if last_price_index != None:
+            tenkan_sen = df.iloc[last_price_index]["tenkan_sen"]
+            kijun_sen = df.iloc[last_price_index]["kijun_sen"]
 
-        if tenkan_sen > kijun_sen:
-            return 1, 4
-        elif tenkan_sen < kijun_sen:
-            return -1, 4
+            if tenkan_sen > kijun_sen:
+                return 1, 4
+            elif tenkan_sen < kijun_sen:
+                return -1, 4
+            else:
+                return 0, 0
         else:
             return 0, 0
 

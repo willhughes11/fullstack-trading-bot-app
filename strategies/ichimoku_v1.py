@@ -158,10 +158,10 @@ class IchimokuCloud:
 
     def price_kijun_sen_cross(self, df: DataFrame):
         last_price_index = df["Close"].last_valid_index()
-        if last_price_index != None: 
+        if last_price_index != None:
             close = df.iloc[last_price_index]["Close"]
             kijun_sen = df.iloc[last_price_index]["kijun_sen"]
-    
+
             if close > kijun_sen:
                 return 1, 5
             elif close < kijun_sen:
@@ -188,12 +188,15 @@ class IchimokuCloud:
 
     def price_chikou_span_cross(self, df: DataFrame):
         last_chikou_span_index = df["chikou_span"].last_valid_index()
-        close = df.iloc[last_chikou_span_index]["Close"]
-        chikou_span = df.iloc[last_chikou_span_index]["chikou_span"]
+        if last_chikou_span_index != None:
+            close = df.iloc[last_chikou_span_index]["Close"]
+            chikou_span = df.iloc[last_chikou_span_index]["chikou_span"]
 
-        if close > chikou_span:
-            return 1, 4
-        elif close < chikou_span:
-            return -1, 4
+            if close > chikou_span:
+                return 1, 4
+            elif close < chikou_span:
+                return -1, 4
+            else:
+                return 0, 0
         else:
             return 0, 0

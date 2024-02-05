@@ -16,8 +16,7 @@ class IchimokuCloud:
 
         return tenkan_sen
 
-    def get_kijun_sen(self):
-        window = 26
+    def get_kijun_sen(self, window: int = 26):
         kijun_high = self.df["High"].rolling(window).max()
         kijun_low = self.df["Low"].rolling(window).min()
         kijun_sen = Series((kijun_high + kijun_low) / 2)
@@ -29,16 +28,14 @@ class IchimokuCloud:
 
         return senkou_span_a
 
-    def get_senkou_span_b(self):
-        window = 52
+    def get_senkou_span_b(self, window: int = 52):
         senkou_b_high = self.df["High"].rolling(window).max()
         senkou_b_low = self.df["Low"].rolling(window).min()
         senkou_span_b = Series(((senkou_b_high + senkou_b_low) / 2))
 
         return senkou_span_b
 
-    def get_chikou_span(self):
-        ahead = -24
+    def get_chikou_span(self, ahead: int = -24):
         chikou_span = Series(self.df["Close"].shift(ahead))
 
         return chikou_span
@@ -58,9 +55,8 @@ class IchimokuCloud:
 
         return indicator_df
 
-    def shift_senkou_clouds(self, df: DataFrame):
+    def shift_senkou_clouds(self, df: DataFrame, shift_periods: int = 26):
         columns_to_shift = ["senkou_span_a", "senkou_span_b"]
-        shift_periods = 26
 
         # Create a new DataFrame with NaN values to hold the shifted columns
         shifted_df = pd.DataFrame(

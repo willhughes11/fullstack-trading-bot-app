@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quantum-flow-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quantum-flow-app
+  template:
+    metadata:
+      labels:
+        app: quantum-flow-app
+    spec:
+      containers:
+      - name: quantum-flow-app
+        image: quantum-flow-app:latest
+        ports:
+        - containerPort: 5000

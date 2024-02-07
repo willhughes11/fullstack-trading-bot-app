@@ -1,3 +1,4 @@
+import warnings
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -5,6 +6,8 @@ from data_sources.yahoo_finance import get_stock_data
 from db import Base, engine
 from engineered_stats.pairs import find_pairs
 from utility_functions import df_to_csv, does_file_exist
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def main() -> None:
@@ -20,6 +23,8 @@ def main() -> None:
         stocks = get_stock_data(start_date, end_date)
         df_to_csv(stocks, file_path)
 
+    print(stocks)
+    
     file_path = "data/raw_data_coint_pairs.csv"
     stocks.dropna(axis=1, inplace=True)
     stocks = stocks.set_index("Date")

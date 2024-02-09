@@ -22,6 +22,7 @@ def main() -> None:
     else:
         stocks = get_stock_data(start_date, end_date)
         df_to_csv(stocks, file_path)
+        stocks = pd.read_csv(file_path)
 
     print(stocks)
     

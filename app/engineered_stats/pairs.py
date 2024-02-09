@@ -1,6 +1,3 @@
-import concurrent.futures
-import time
-
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -78,7 +75,6 @@ def find_conintegrated_pairs(
     tested_pairs = []
     cointegrated_pairs = []
 
-   
     for base_asset in clusters_clean.index:
         base_label = clusters_clean[base_asset]
 
@@ -95,7 +91,6 @@ def find_conintegrated_pairs(
                 and base_label == compare_label
                 and not is_tested
             ):
-
                 series_1 = data[base_asset].values.astype(float)
                 series_2 = data[compare_asset].values.astype(float)
                 coint_flag, _ = calculate_cointegration(series_1, series_2)
@@ -108,8 +103,17 @@ def find_conintegrated_pairs(
                         }
                     )
 
-    df_coint = pd.DataFrame(cointegrated_pairs).sort_values(by="label")
+                    print(
+                        {
+                            "base_asset": base_asset,
+                            "compare_asset": compare_asset,
+                            "label": base_label,
+                        }
+                    )
+
+    df_coint = pd.DataFrame(cointegrated_pairs)
     return df_coint
+
 
 def get_unique_cointegrated_assets(df_coint: pd.DataFrame):
     coint_assets = [df_coint["base_asset"].values]
@@ -118,6 +122,7 @@ def get_unique_cointegrated_assets(df_coint: pd.DataFrame):
 
     return coint_unique_assets
 
+
 def find_pairs(data: pd.DataFrame, trading_days: int, file_path: str):
     if not does_file_exist(file_path):
         df_returns = find_returns_and_volatility(data, trading_days)
@@ -125,9 +130,9 @@ def find_pairs(data: pd.DataFrame, trading_days: int, file_path: str):
         X, k_means = fit_k_means_model(df_scaled)
         clustered_series, clustered_series_all = return_clustered_series(X, k_means)
         clusters_clean = clean_clustered_series(clustered_series)
-        df_coint = find_conintegrated_pairs(clustered_series, data, file_path).iloc[:, 1:]
+        df_coint = find_conintegrated_pairs(clustered_series, data, file_path)
         df_to_csv(df_coint, file_path)
     else:
-        df_coint = pd.read_csv(file_path).iloc[:, 1:]
-        
+        df_coint = pd.read_csv(file_path)
+
     return df_coint

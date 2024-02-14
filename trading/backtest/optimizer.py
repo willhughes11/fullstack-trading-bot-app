@@ -1,16 +1,13 @@
-import random
-import typing
 import copy
+import logging
+import random
 
+import strategies.hmm
+from database import Hdf5Client
+from models import BacktestResult
 from utils import STRAT_PARAMS, resample_timeframe
 
-from database import Hdf5Client
-from trading.backtest.models import BacktestResult
-
-import strategies.obv
-import strategies.ichimoku
-import strategies.support_resistance
-
+logger = logging.getLogger()
 
 class Nsga2:
     def __init__(
@@ -39,7 +36,7 @@ class Nsga2:
         self.data = h5_db.get_data(symbol, from_time, to_time)
         self.data = resample_timeframe(self.data, tf)
 
-    def create_initial_population(self) -> typing.List[BacktestResult]:
+    def create_initial_population(self) -> list[BacktestResult]:
         population = []
 
         while len(population) < self.population_size:
@@ -59,8 +56,8 @@ class Nsga2:
         return population
 
     def create_new_population(
-        self, fronts: typing.List[typing.List[BacktestResult]]
-    ) -> typing.List[BacktestResult]:
+        self, fronts: list[list[BacktestResult]]
+    ) -> list[BacktestResult]:
         new_pop = []
 
         for front in fronts:
@@ -76,12 +73,12 @@ class Nsga2:
         return new_pop
 
     def create_offspring_population(
-        self, population: typing.List[BacktestResult]
-    ) -> typing.List[BacktestResult]:
+        self, population: list[BacktestResult]
+    ) -> list[BacktestResult]:
         offspring_pop = []
 
         while len(offspring_pop) != self.population_size:
-            parents: typing.List[BacktestResult] = []
+            parents: list[BacktestResult] = []
 
             for i in range(2):
                 random_parents = random.sample(population, k=2)
@@ -139,24 +136,15 @@ class Nsga2:
 
         return offspring_pop
 
-    def _params_constraints(self, params: typing.Dict) -> typing.Dict:
-        if self.strategy == "ichimoku":
-            params["kijun"] = max(params["kijun"], params["tenkan"])
-
-        elif self.strategy == "sma":
-            params["slow_ma"] = max(params["slow_ma"], params["fast_ma"])
-
-        elif self.strategy == "psar":
-            params["initial_acc"] = min(params["initial_acc"], params["max_acc"])
-            params["acc_increment"] = min(
-                params["acc_increment"], params["max_acc"] - params["initial_acc"]
-            )
+    def _params_constraints(self, params: dict) -> dict:
+        if self.strategy == "hmm":
+            params["ma_l_window"] = max(params["ma_l_window"], params["ma_s_window"])
 
         return params
 
     def crowding_distance(
-        self, population: typing.List[BacktestResult]
-    ) -> typing.List[BacktestResult]:
+        self, population: list[BacktestResult]
+    ) -> list[BacktestResult]:
         for objective in ["pnl", "max_dd"]:
             population = sorted(population, key=lambda x: getattr(x, objective))
             min_value = getattr(
@@ -180,8 +168,8 @@ class Nsga2:
         return population
 
     def non_dominated_sorting(
-        self, population: typing.Dict[int, BacktestResult]
-    ) -> typing.List[typing.List[BacktestResult]]:
+        self, population: dict[int, BacktestResult]
+    ) -> list[list[BacktestResult]]:
         fronts = []
 
         for id_1, indiv_1 in population.items():
@@ -226,47 +214,28 @@ class Nsga2:
         return fronts
 
     def evaluate_population(
-        self, population: typing.List[BacktestResult]
-    ) -> typing.List[BacktestResult]:
-        if self.strategy == "obv":
+        self, population: list[BacktestResult]
+    ) -> list[BacktestResult]:
+        data_len = len(self.data)
+        train_split = int(data_len / 2)
+        test_split = data_len - train_split
+        if self.strategy == "hmm":
             for bt in population:
-                bt.pnl, bt.max_dd = strategies.obv.backtest(
-                    self.data, ma_period=bt.parameters["ma_period"]
-                )
+                try:
+                    bt.pnl, bt.max_dd, bt.features = strategies.hmm.backtest(
+                        self.data,
+                        train_split,
+                        test_split,
+                        ma_l_window=bt.parameters["ma_l_window"],
+                        ma_s_window=bt.parameters["ma_s_window"],
+                        n_states=bt.parameters["n_states"],
+                        covariance_type="full",
+                    )
 
-                if bt.pnl == 0:
-                    bt.pnl = -float("inf")
-                    bt.max_dd = float("inf")
-
-            return population
-
-        elif self.strategy == "ichimoku":
-            for bt in population:
-                bt.pnl, bt.max_dd = strategies.ichimoku.backtest(
-                    self.data,
-                    tenkan_period=bt.parameters["tenkan"],
-                    kijun_period=bt.parameters["kijun"],
-                )
-
-                if bt.pnl == 0:
-                    bt.pnl = -float("inf")
-                    bt.max_dd = float("inf")
-
-            return population
-
-        elif self.strategy == "sup_res":
-            for bt in population:
-                bt.pnl, bt.max_dd = strategies.support_resistance.backtest(
-                    self.data,
-                    min_points=bt.parameters["min_points"],
-                    min_diff_points=bt.parameters["min_diff_points"],
-                    rounding_nb=bt.parameters["rounding_nb"],
-                    take_profit=bt.parameters["take_profit"],
-                    stop_loss=bt.parameters["stop_loss"],
-                )
-
-                if bt.pnl == 0:
-                    bt.pnl = -float("inf")
-                    bt.max_dd = float("inf")
+                    if bt.pnl == 0:
+                        bt.pnl = -float("inf")
+                        bt.max_dd = float("inf")
+                except Exception as e:
+                    logger.error(e)
 
             return population

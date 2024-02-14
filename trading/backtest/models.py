@@ -10,10 +10,16 @@ class BacktestResult:
         self.dominates: typing.List[int] = []
         self.rank: int = 0
         self.crowding_distance: float = 0.0
+        self.features: list[str] = [] 
 
     def __repr__(self):
-        return f"PNL = {round(self.pnl, 2)} Max. Drawdown = {round(self.max_dd, 2)} Parameters = {self.parameters} " \
-               f"Rank = {self.rank} Crowding Distance = {self.crowding_distance}"
+        return_string = f"PNL = {round(self.pnl, 2)} | Max. Drawdown = {round(self.max_dd, 2)} | Parameters = {self.parameters} | " \
+               f"Rank = {self.rank} | Crowding Distance = {self.crowding_distance}"
+        
+        if len(self.features) > 0:
+            return_string += f" | Features = {self.features}"
+
+        return return_string
 
     def reset_results(self):
         self.dominated_by = 0

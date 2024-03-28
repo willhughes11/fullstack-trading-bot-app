@@ -161,3 +161,4 @@ cython_debug/
 .vscode/
 app/data/
 trading/backtest/data
+trading/backtest/strategies/notebooks/data
